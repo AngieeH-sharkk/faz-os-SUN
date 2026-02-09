@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAZ-OS: DAYCARE ATTENDANT INTERFACE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        /* --- GLOBAL CONFIG --- */
+        :root {
+            --primary-sun: #FFB300;
+            --secondary-sun: #FFF9C4;
+            --accent-sun: #E65100;
+            --bg-dark: #121212; 
+            
+            --scanline-color: rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #000;
+            color: var(--primary-sun);
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        .tech-font { font-family: 'Share Tech Mono', monospace; }
+        .header-font { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; }
+
+        /* --- BACKGROUND GRID --- */
+        .grid-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            z-index: -2;
+        }
+
+        /* --- UI COMPONENTS --- */
+        
+        /* Tech Panels */
+        .panel {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid var(--primary-sun);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            position: relative;
+        }
+        /* Corner Accents for Panels */
+        .panel::before, .panel::after {
+            content: ''; position: absolute; width: 10px; height: 10px;
+            border: 2px solid var(--primary-sun); transition: border-color 0.3s;
+        }
+        .panel::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+        .panel::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+        /* Buttons */
+        .sys-btn {
+            background: transparent;
+            border: 1px solid var(--primary-sun);
+            color: var(--primary-sun);
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .sys-btn:hover {
+            background: var(--primary-sun);
+            color: #000;
+            box-shadow: 0 0 15px var(--primary-sun);
+        }
+        .sys-btn.active {
+            background: var(--primary-sun);
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            background: var(--primary-sun);
+            cursor: pointer;
+            margin-top: -6px;
+            border-radius: 0;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #333;
+            border: 1px solid #555;
+        }
+
+        /* --- ANIMATIONS --- */
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        .scanline {
+            width: 100%; height: 2px;
+            background: rgba(255,255,255,0.1);
+            position: fixed; top: 0; left: 0;
+            animation: scan 3s linear infinite;
+            pointer-events: none; z-index: 50;
+        }
+        @keyframes scan { 0% {top: 0%} 100% {top: 100%} }
+
+        /* Camera Pan Animation */
+        @keyframes panCamera {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .camera-view {
+            width: 100%;
+            height: 400px;
+            /* Placeholder for user image */
+            background-color: #000;
+            /* Make sure your image is named 'camera_feed.jpg' and is in the same folder */
+            background-image: url('camera_feed.jpg'); 
+            background-position: center;
+            background-size: 120% auto; /* Zoomed in slightly for pan effect */
+            position: relative;
+            animation: panCamera 30s infinite ease-in-out;
+            border: 2px solid #333;
+            box-shadow: inset 0 0 50px #000;
+            overflow: hidden;
+        }
+        
+        /* Simulating objects in the room moving with parallax */
+        .camera-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle, rgba(0,0,0,0) 50%, rgba(0,0,0,0.8) 100%);
+            z-index: 2;
+        }
+
+        /* CRT Effect Overlay */
+        .crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 40;
+        }
+        
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100; /* Above everything */
+        }
+
+        /* Tab Transitions */
+        .tab-content { display: none; opacity: 0; }
+        .tab-content.active { display: block; animation: slideUp 0.4s forwards ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
+    
+    <!-- Confetti Layer -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- HUD HEADER -->
+    <header class="fixed top-0 w-full h-16 border-b border-[var(--primary-sun)] bg-black/90 backdrop-blur-md z-30 flex items-center justify-between px-6 tech-font select-none">
+        <div class="flex items-center gap-4">
+            <div class="w-3 h-3 bg-[var(--primary-sun)] rounded-full blink"></div>
+            <div class="text-xl font-bold tracking-widest text-[var(--primary-sun)]">FAZ-OS <span class="text-xs opacity-70 align-top">v9.5.2</span></div>
+        </div>
+        
+        <div class="flex items-center gap-8">
+            <div class="hidden md:block text-xs opacity-70 uppercase tracking-widest text-[var(--primary-sun)]">
+                Secure Connection Est.
+            </div>
+            <div class="text-right">
+                <div id="clock" class="text-lg font-bold text-[var(--primary-sun)]">00:00</div>
+                <div class="flex items-center gap-2 justify-end text-xs text-[var(--primary-sun)]">
+                    <span id="battery-level">100%</span>
+                    <div class="w-6 h-3 border border-[var(--primary-sun)] p-0.5">
+                        <div id="battery-fill" class="w-full h-full bg-[var(--primary-sun)]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN INTERFACE -->
+    <main class="pt-24 pb-12 px-4 max-w-6xl mx-auto min-h-screen flex flex-col gap-6 relative z-10">
+        
+        <!-- STATUS DASHBOARD -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Profile Module -->
+            <div class="panel p-6 col-span-1 md:col-span-2 flex items-center gap-6">
+                <div class="relative w-24 h-24 flex-shrink-0 border-2 border-[var(--primary-sun)] flex items-center justify-center bg-black/50">
+                    <span id="avatar-icon" class="text-5xl filter drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">☀️</span>
+                    <div class="absolute bottom-0 right-0 bg-[var(--primary-sun)] text-black text-[10px] px-1 font-bold">L-5</div>
+                </div>
+                <div>
+                    <h2 class="text-sm tech-font opacity-70 mb-1">OPERATOR ID</h2>
+                    <h1 class="text-4xl header-font font-bold tracking-wider text-[var(--primary-sun)]">SUNNYDROP</h1>
+                    <div class="flex gap-2 mt-2">
+                        <span class="text-xs border border-[var(--primary-sun)] px-2 py-0.5 text-[var(--primary-sun)] bg-[rgba(255,179,0,0.05)]">ACTIVE</span>
+                        <span class="text-xs border border-[var(--primary-sun)] px-2 py-0.5 text-[var(--primary-sun)] opacity-50">UNIT 001</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lighting Status Module (Fixed Day Mode) -->
+            <div class="panel p-6 flex flex-col justify-between items-start">
+                <div>
+                    <h2 class="text-sm tech-font opacity-70 mb-2">LIGHTING STATUS</h2>
+                    <div class="text-xs text-[var(--primary-sun)] opacity-60 mb-4">Safety protocols engaged.</div>
+                </div>
+                
+                <div class="flex items-center gap-4 w-full mt-auto">
+                    <div class="w-4 h-4 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>
+                    <span class="tech-font font-bold text-xl text-[var(--primary-sun)]">DAY_MODE</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- NAVIGATION DECK -->
+        <nav class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button onclick="switchTab('dashboard')" class="sys-btn py-4 text-lg active" id="btn-dashboard">DASHBOARD</button>
+            <button onclick="switchTab('camera')" class="sys-btn py-4 text-lg" id="btn-camera">CAMERA</button>
+            <button onclick="switchTab('settings')" class="sys-btn py-4 text-lg" id="btn-settings">SETTINGS</button>
+            <button onclick="switchTab('system')" class="sys-btn py-4 text-lg" id="btn-system">SYSTEM</button>
+        </nav>
+
+        <!-- CONTENT DISPLAY -->
+        <div class="panel min-h-[400px] p-8">
+            
+            <!-- DASHBOARD TAB -->
+            <div id="dashboard" class="tab-content active">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Column: Welcome & Status -->
+                    <div>
+                        <div class="border-l-4 border-[var(--primary-sun)] pl-6 mb-8">
+                            <h3 class="text-3xl font-bold header-font text-[var(--primary-sun)] mb-2">GUEST WELCOME SEQUENCE</h3>
+                            <p class="tech-font text-lg opacity-80 leading-relaxed">
+                                Initializing friendly greeting protocol...<br>
+                                "HELLO NEW FRIEND! We are going to have SO MUCH FUN together!"<br>
+                                <span class="text-xs opacity-50 mt-2 block">> Analysis: Enthusiasm at 120%</span>
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 mt-8">
+                            <div class="border border-[var(--primary-sun)] p-4 bg-[rgba(255,179,0,0.05)]">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold tech-font">INVENTORY: CANDY</h4>
+                                    <span class="text-xs animate-pulse">● STOCK OK</span>
+                                </div>
+                                <div class="w-full bg-gray-800 h-2 mt-2">
+                                    <div class="bg-[var(--primary-sun)] h-full" style="width: 85%"></div>
+                                </div>
+                            </div>
+                            <div class="border border-[var(--primary-sun)] p-4 bg-[rgba(255,179,0,0.05)]">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold tech-font">CLEANLINESS</h4>
+                                    <span class="text-xs animate-pulse">● SPOTLESS</span>
+                                </div>
+                                <div class="w-full bg-gray-800 h-2 mt-2">
+                                    <div class="bg-[var(--primary-sun)] h-full" style="width: 98%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: To-Do List -->
+                    <div class="border border-[var(--primary-sun)] p-6 bg-black/40">
+                        <div class="flex justify-between items-center mb-4 border-b border-[var(--primary-sun)] pb-2">
+                            <h3 class="text-xl font-bold header-font">DAILY PROTOCOLS</h3>
+                            <span class="text-xs tech-font opacity-60">STATUS: <span id="protocol-status">PENDING</span></span>
+                        </div>
+                        
+                        <div class="space-y-4 tech-font" id="todo-list">
+                            <!-- Task 1 -->
+                            <label class="flex items-center gap-4 cursor-pointer group select-none">
+                                <input type="checkbox" class="peer hidden">
+                                <div class="w-6 h-6 border border-[var(--primary-sun)] peer-checked:bg-[var(--primary-sun)] flex items-center justify-center transition-colors">
+                                    <span class="text-black font-bold opacity-0 peer-checked:opacity-100">✓</span>
+                                </div>
+                                <span class="group-hover:text-white transition-colors peer-checked:opacity-50 peer-checked:line-through">MONITOR LITTLE ONES</span>
+                            </label>
+
+                            <!-- Task 2 -->
+                            <label class="flex items-center gap-4 cursor-pointer group select-none">
+                                <input type="checkbox" class="peer hidden">
+                                <div class="w-6 h-6 border border-[var(--primary-sun)] peer-checked:bg-[var(--primary-sun)] flex items-center justify-center transition-colors">
+                                    <span class="text-black font-bold opacity-0 peer-checked:opacity-100">✓</span>
+                                </div>
+                                <span class="group-hover:text-white transition-colors peer-checked:opacity-50 peer-checked:line-through">CHECK GENERATOR POWER</span>
+                            </label>
+
+                            <!-- Task 3 -->
+                            <label class="flex items-center gap-4 cursor-pointer group select-none">
+                                <input type="checkbox" class="peer hidden">
+                                <div class="w-6 h-6 border border-[var(--primary-sun)] peer-checked:bg-[var(--primary-sun)] flex items-center justify-center transition-colors">
+                                    <span class="text-black font-bold opacity-0 peer-checked:opacity-100">✓</span>
+                                </div>
+                                <span class="group-hover:text-white transition-colors peer-checked:opacity-50 peer-checked:line-through">REFILL GLITTER GLUE</span>
+                            </label>
+                            
+                            <!-- Task 4 -->
+                            <label class="flex items-center gap-4 cursor-pointer group select-none">
+                                <input type="checkbox" class="peer hidden">
+                                <div class="w-6 h-6 border border-[var(--primary-sun)] peer-checked:bg-[var(--primary-sun)] flex items-center justify-center transition-colors">
+                                    <span class="text-black font-bold opacity-0 peer-checked:opacity-100">✓</span>
+                                </div>
+                                <span class="group-hover:text-white transition-colors peer-checked:opacity-50 peer-checked:line-through">ORGANIZE PHYSICS BLOCKS</span>
+                            </label>
+
+                            <!-- Task 5 (Critical) -->
+                            <label class="flex items-center gap-4 cursor-pointer group select-none opacity-50 hover:opacity-100 transition-opacity">
+                                <input type="checkbox" class="peer hidden">
+                                <div class="w-6 h-6 border border-red-500 bg-red-900/20 peer-checked:bg-red-500 flex items-center justify-center">
+                                    <span class="text-red-500 font-bold peer-checked:text-black">!</span>
+                                </div>
+                                <span class="text-red-500 peer-checked:line-through peer-checked:opacity-50">KEEP LIGHTS ON</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="mt-8 sys-btn px-8 py-3 w-full font-bold border-2 hover:bg-[var(--primary-sun)] hover:text-black transition-colors">
+                    INITIATE REGISTRATION
+                </button>
+            </div>
+
+            <!-- CAMERA TAB -->
+            <div id="camera" class="tab-content">
+                <div class="flex justify-between items-center mb-4 border-b border-[var(--primary-sun)] pb-2">
+                    <h3 class="text-2xl font-bold header-font text-[var(--primary-sun)]">SECURITY FEED</h3>
+                    <span class="tech-font text-red-500 animate-pulse font-bold">● REC [LIVE]</span>
+                </div>
+                
+                <div class="relative w-full border border-[#333]">
+                    <!-- Camera Viewport -->
+                    <div class="camera-view">
+                        <!-- Simulated room content done via background pattern -->
+                        <div class="camera-overlay"></div>
+                    </div>
+                    
+                    <!-- Camera HUD Overlay -->
+                    <div class="absolute top-4 left-4 text-[var(--primary-sun)] tech-font text-sm drop-shadow-md z-10">
+                        CAM 04: DAYCARE_FLOOR<br>
+                        <span id="cam-timestamp">00:00:00</span>
+                    </div>
+                    <div class="absolute bottom-4 right-4 text-[var(--primary-sun)] tech-font text-xs opacity-70 z-10">
+                        Signal Quality: 98%
+                    </div>
+                    
+                    <!-- Crosshair -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-30">
+                        <div class="w-8 h-8 border border-[var(--primary-sun)]"></div>
+                        <div class="w-[1px] h-full bg-[var(--primary-sun)] absolute"></div>
+                        <div class="w-full h-[1px] bg-[var(--primary-sun)] absolute"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex gap-4 text-xs tech-font opacity-60">
+                    <div>PTZ: AUTO-PAN</div>
+                    <div>ZOOM: 1.0x</div>
+                    <div>IRIS: AUTO</div>
+                </div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div id="settings" class="tab-content">
+                <h3 class="text-2xl font-bold header-font mb-6 border-b border-[var(--primary-sun)] pb-2 text-[var(--primary-sun)]">SYSTEM CONFIGURATION</h3>
+
+                <div class="space-y-8 max-w-2xl">
+                    <!-- Audio Settings -->
+                    <div>
+                        <div class="flex justify-between mb-2 tech-font">
+                            <span>AUDIO SENSITIVITY</span>
+                            <span class="text-[var(--primary-sun)]">85%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="85">
+                    </div>
+
+                    <!-- Brightness Settings -->
+                    <div>
+                        <div class="flex justify-between mb-2 tech-font">
+                            <span>OPTIC BRIGHTNESS</span>
+                            <span class="text-[var(--primary-sun)]">100%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="100">
+                    </div>
+
+                    <!-- Toggles -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div class="flex items-center justify-between border border-[var(--primary-sun)] p-4 bg-[rgba(255,179,0,0.05)]">
+                            <span class="tech-font font-bold">KID FRIENDLY MODE</span>
+                            <div class="w-4 h-4 bg-[var(--primary-sun)] shadow-[0_0_8px_var(--primary-sun)]"></div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between border border-[var(--primary-sun)] p-4 bg-[rgba(255,179,0,0.05)] opacity-50">
+                            <span class="tech-font font-bold">NIGHT PROTOCOL</span>
+                            <div class="w-4 h-4 border border-[var(--primary-sun)]"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 border border-red-900 bg-red-900/20 text-red-500 text-xs tech-font">
+                        > WARNING: SYSTEM OVERRIDE IS DISABLED BY ADMINISTRATOR.<br>
+                        > LIGHTING SETTINGS ARE LOCKED TO "MAXIMUM"
+                    </div>
+                </div>
+            </div>
+
+            <!-- SYSTEM TAB (About) -->
+            <div id="system" class="tab-content">
+                <div class="flex flex-col md:flex-row gap-8 items-center">
+                    <div class="w-48 h-48 border-4 border-[var(--primary-sun)] rounded-full flex items-center justify-center bg-black/40 relative overflow-hidden">
+                        <!-- Radar Scan Effect -->
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--primary-sun)] to-transparent opacity-20 animate-[spin_2s_linear_infinite]"></div>
+                        <span class="text-6xl relative z-10" id="sys-avatar">☀️</span>
+                    </div>
+                    
+                    <div class="flex-grow w-full">
+                        <h3 class="text-2xl font-bold header-font text-[var(--primary-sun)] mb-4">UNIT DIAGNOSTICS</h3>
+                        <div class="space-y-2 text-sm tech-font">
+                            <div class="flex justify-between border-b border-gray-800 pb-1">
+                                <span class="opacity-60">MODEL:</span>
+                                <span>DA-001 (Daycare Attendant)</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-800 pb-1">
+                                <span class="opacity-60">FUNCTION:</span>
+                                <span>Child Care / Security / Maintenance</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-800 pb-1">
+                                <span class="opacity-60">PERSONALITY CORE:</span>
+                                <span>SUNNY (STABLE)</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-800 pb-1">
+                                <span class="opacity-60">SECURITY CLEARANCE:</span>
+                                <span>LEVEL 5 (Restricted)</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-2 bg-gray-900 text-xs font-mono text-gray-400">
+                            > SYSTEM NOTE: Night Mode functionality deleted by user request.<br>
+                            > Keep the lights on.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="text-center text-[10px] tech-font opacity-40 uppercase tracking-widest mt-auto">
+            Fazbear Entertainment © 202X | System Use Restricted | Not Responsible for Data Corruption or Physical Harm
+        </footer>
+
+    </main>
+
+    <!-- LOGIC -->
+    <script>
+        // --- CLOCK, BATTERY & CAM TIMESTAMP ---
+        function updateSystem() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour12: false });
+            
+            // Update Main Clock
+            document.getElementById('clock').innerText = timeString;
+            
+            // Update Camera Timestamp
+            const camTimestamp = document.getElementById('cam-timestamp');
+            if(camTimestamp) {
+                camTimestamp.innerText = now.toISOString().split('T')[0] + ' ' + timeString;
+            }
+            
+            // Random tiny fluctuation in battery for "realism"
+            if(Math.random() > 0.9) {
+                document.getElementById('battery-level').style.opacity = (Math.random() > 0.5) ? '1' : '0.5';
+            } else {
+                document.getElementById('battery-level').style.opacity = '1';
+            }
+        }
+        setInterval(updateSystem, 1000);
+        updateSystem();
+
+        // --- NAVIGATION ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('.sys-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + tabId).classList.add('active');
+        }
+        
+        // --- CONFETTI & CHECKLIST LOGIC ---
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Handle Resize
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let particles = [];
+        const sunEmoji = "☀️";
+        const colors = ['#FFB300', '#FFF9C4', '#E65100', '#FFFFFF'];
+
+        function createParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: -30,
+                size: Math.random() * 10 + 5,
+                speedY: Math.random() * 3 + 2,
+                speedX: Math.random() * 2 - 1,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotation: Math.random() * 360,
+                rotationSpeed: Math.random() * 10 - 5,
+                type: Math.random() > 0.8 ? 'sun' : 'confetti' // 20% Chance of Sun
+            };
+        }
+
+        function updateParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotationSpeed;
+
+                if (p.y > canvas.height) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function drawParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let p of particles) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                
+                if (p.type === 'sun') {
+                    ctx.font = `${p.size * 2}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(sunEmoji, 0, 0);
+                } else {
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        function startConfetti() {
+            // Update Status Text
+            const statusText = document.getElementById('protocol-status');
+            statusText.innerText = "COMPLETE!";
+            statusText.style.color = "#22c55e"; // Green
+
+            let duration = 5000; // 5 seconds
+            let end = Date.now() + duration;
+
+            (function frame() {
+                // Burst new particles
+                if (Date.now() < end) {
+                    // Spawn rate
+                    for(let i=0; i<3; i++) particles.push(createParticle());
+                }
+                
+                updateParticles();
+                drawParticles();
+
+                if (Date.now() < end || particles.length > 0) {
+                    requestAnimationFrame(frame);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }());
+        }
+
+        // Checklist Monitoring
+        const checkboxes = document.querySelectorAll('#todo-list input[type="checkbox"]');
+        
+        checkboxes.forEach(box => {
+            box.addEventListener('change', () => {
+                const allChecked = Array.from(checkboxes).every(b => b.checked);
+                if (allChecked) {
+                    startConfetti();
+                } else {
+                    // Reset status if unchecked
+                    const statusText = document.getElementById('protocol-status');
+                    statusText.innerText = "PENDING";
+                    statusText.style.color = "";
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
