@@ -9,21 +9,37 @@
     <style>
         /* --- GLOBAL CONFIG --- */
         :root {
+            /* DEFAULT SUN MODE */
             --primary-sun: #FFB300;
             --secondary-sun: #FFF9C4;
             --accent-sun: #E65100;
             --bg-dark: #121212; 
-            
+            --panel-bg: rgba(10, 10, 10, 0.8);
             --scanline-color: rgba(0, 0, 0, 0.5);
+            --glitch-text-shadow: none;
+            --font-main: 'Rajdhani', sans-serif;
+        }
+
+        /* --- RUIN / ENTITY MODE VARIABLES --- */
+        body.ruin-mode {
+            /* ENTITY VIRUS PALETTE */
+            --primary-sun: #00FFFF; /* Cyan */
+            --secondary-sun: #9D00FF; /* Electric Purple */
+            --accent-sun: #FFFFFF; /* Static White */
+            --bg-dark: #05000a; 
+            --panel-bg: rgba(5, 0, 15, 0.9);
+            --scanline-color: rgba(157, 0, 255, 0.2);
+            --glitch-text-shadow: 2px 0 #9D00FF, -2px 0 #00FFFF;
         }
 
         body {
-            font-family: 'Rajdhani', sans-serif;
+            font-family: var(--font-main);
             background-color: #000;
             color: var(--primary-sun);
             margin: 0;
             min-height: 100vh;
             overflow-x: hidden;
+            transition: color 0.5s ease;
         }
 
         /* --- TYPOGRAPHY --- */
@@ -39,22 +55,31 @@
                 linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             z-index: -2;
+            transition: filter 0.5s ease;
+        }
+        
+        body.ruin-mode .grid-bg {
+            filter: hue-rotate(180deg) contrast(1.5);
+            background-image: 
+                linear-gradient(to right, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(157, 0, 255, 0.1) 1px, transparent 1px);
         }
 
         /* --- UI COMPONENTS --- */
         
         /* Tech Panels */
         .panel {
-            background: rgba(10, 10, 10, 0.8);
+            background: var(--panel-bg);
             border: 1px solid var(--primary-sun);
             box-shadow: 0 0 10px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);
             backdrop-filter: blur(4px);
             position: relative;
+            transition: border-color 0.5s, box-shadow 0.5s;
         }
         /* Corner Accents for Panels */
         .panel::before, .panel::after {
             content: ''; position: absolute; width: 10px; height: 10px;
-            border: 2px solid var(--primary-sun); transition: border-color 0.3s;
+            border: 2px solid var(--primary-sun); transition: border-color 0.5s;
         }
         .panel::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
         .panel::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
@@ -96,6 +121,7 @@
             cursor: pointer;
             margin-top: -6px;
             border-radius: 0;
+            transition: background 0.3s;
         }
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
@@ -117,6 +143,12 @@
             pointer-events: none; z-index: 50;
         }
         @keyframes scan { 0% {top: 0%} 100% {top: 100%} }
+        
+        body.ruin-mode .scanline {
+            background: rgba(0, 255, 255, 0.3);
+            height: 5px;
+            animation: scan 0.5s linear infinite;
+        }
 
         /* Camera Pan Animation */
         @keyframes panCamera {
@@ -128,20 +160,23 @@
         .camera-view {
             width: 100%;
             height: 400px;
-            /* Placeholder for user image */
             background-color: #000;
-            /* Make sure your image is named 'camera_feed.jpg' and is in the same folder */
             background-image: url('camera_feed.jpg'); 
             background-position: center;
-            background-size: 120% auto; /* Zoomed in slightly for pan effect */
+            background-size: 120% auto;
             position: relative;
             animation: panCamera 30s infinite ease-in-out;
             border: 2px solid #333;
             box-shadow: inset 0 0 50px #000;
             overflow: hidden;
+            transition: filter 0.5s;
         }
         
-        /* Simulating objects in the room moving with parallax */
+        body.ruin-mode .camera-view {
+            filter: grayscale(100%) contrast(200%) drop-shadow(0 0 10px cyan);
+            border-color: var(--secondary-sun);
+        }
+        
         .camera-overlay {
             position: absolute;
             inset: 0;
@@ -160,19 +195,77 @@
         
         /* Confetti Canvas */
         #confetti-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 100; /* Above everything */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100;
         }
 
         /* Tab Transitions */
         .tab-content { display: none; opacity: 0; }
         .tab-content.active { display: block; animation: slideUp 0.4s forwards ease-out; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- RUIN SPECIFIC EFFECTS --- */
+        body.ruin-mode h1, body.ruin-mode h2, body.ruin-mode h3 {
+            text-shadow: var(--glitch-text-shadow);
+        }
+        
+        body.ruin-mode .ruin-glitch {
+            animation: glitch-anim 2s infinite;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        /* --- HIDDEN FORCE RUIN TOGGLE --- */
+        #force-ruin-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 50px;
+            z-index: 9999;
+            opacity: 0; /* Invisible by default */
+            transition: opacity 0.3s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            border: 1px solid #00FFFF;
+            box-shadow: 0 0 15px #9D00FF;
+            pointer-events: auto;
+        }
+
+        #force-ruin-container:hover {
+            opacity: 1; /* Visible on hover */
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            margin-left: 10px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333; transition: .4s;
+        }
+        .slider:before {
+            position: absolute; content: "";
+            height: 14px; width: 14px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s;
+        }
+        input:checked + .slider { background-color: #9D00FF; }
+        input:checked + .slider:before { transform: translateX(20px); }
 
     </style>
 </head>
@@ -185,23 +278,32 @@
     <!-- Confetti Layer -->
     <canvas id="confetti-canvas"></canvas>
 
+    <!-- HIDDEN FORCE RUIN TOGGLE -->
+    <div id="force-ruin-container">
+        <span class="text-[10px] text-[#00FFFF] font-mono mr-2">FORCE_RUIN</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="ruin-toggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+
     <!-- HUD HEADER -->
-    <header class="fixed top-0 w-full h-16 border-b border-[var(--primary-sun)] bg-black/90 backdrop-blur-md z-30 flex items-center justify-between px-6 tech-font select-none">
+    <header class="fixed top-0 w-full h-16 border-b border-[var(--primary-sun)] bg-black/90 backdrop-blur-md z-30 flex items-center justify-between px-6 tech-font select-none transition-colors duration-500">
         <div class="flex items-center gap-4">
             <div class="w-3 h-3 bg-[var(--primary-sun)] rounded-full blink"></div>
-            <div class="text-xl font-bold tracking-widest text-[var(--primary-sun)]">FAZ-OS <span class="text-xs opacity-70 align-top">v9.5.2</span></div>
+            <div class="text-xl font-bold tracking-widest text-[var(--primary-sun)]" id="os-title">FAZ-OS <span class="text-xs opacity-70 align-top">v9.5.2</span></div>
         </div>
         
         <div class="flex items-center gap-8">
-            <div class="hidden md:block text-xs opacity-70 uppercase tracking-widest text-[var(--primary-sun)]">
+            <div class="hidden md:block text-xs opacity-70 uppercase tracking-widest text-[var(--primary-sun)]" id="connection-status">
                 Secure Connection Est.
             </div>
             <div class="text-right">
                 <div id="clock" class="text-lg font-bold text-[var(--primary-sun)]">00:00</div>
                 <div class="flex items-center gap-2 justify-end text-xs text-[var(--primary-sun)]">
                     <span id="battery-level">100%</span>
-                    <div class="w-6 h-3 border border-[var(--primary-sun)] p-0.5">
-                        <div id="battery-fill" class="w-full h-full bg-[var(--primary-sun)]"></div>
+                    <div class="w-6 h-3 border border-[var(--primary-sun)] p-0.5 transition-colors duration-500">
+                        <div id="battery-fill" class="w-full h-full bg-[var(--primary-sun)] transition-colors duration-500"></div>
                     </div>
                 </div>
             </div>
@@ -215,30 +317,30 @@
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Profile Module -->
             <div class="panel p-6 col-span-1 md:col-span-2 flex items-center gap-6">
-                <div class="relative w-24 h-24 flex-shrink-0 border-2 border-[var(--primary-sun)] flex items-center justify-center bg-black/50">
+                <div class="relative w-24 h-24 flex-shrink-0 border-2 border-[var(--primary-sun)] flex items-center justify-center bg-black/50 transition-colors duration-500">
                     <span id="avatar-icon" class="text-5xl filter drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">☀️</span>
-                    <div class="absolute bottom-0 right-0 bg-[var(--primary-sun)] text-black text-[10px] px-1 font-bold">L-5</div>
+                    <div class="absolute bottom-0 right-0 bg-[var(--primary-sun)] text-black text-[10px] px-1 font-bold transition-colors duration-500" id="clearance-badge">L-5</div>
                 </div>
                 <div>
                     <h2 class="text-sm tech-font opacity-70 mb-1">OPERATOR ID</h2>
-                    <h1 class="text-4xl header-font font-bold tracking-wider text-[var(--primary-sun)]">SUNNYDROP</h1>
+                    <h1 class="text-4xl header-font font-bold tracking-wider text-[var(--primary-sun)] ruin-glitch" id="operator-name">SUNNYDROP</h1>
                     <div class="flex gap-2 mt-2">
-                        <span class="text-xs border border-[var(--primary-sun)] px-2 py-0.5 text-[var(--primary-sun)] bg-[rgba(255,179,0,0.05)]">ACTIVE</span>
-                        <span class="text-xs border border-[var(--primary-sun)] px-2 py-0.5 text-[var(--primary-sun)] opacity-50">UNIT 001</span>
+                        <span id="status-tag-1" class="text-xs border border-[var(--primary-sun)] px-2 py-0.5 text-[var(--primary-sun)] bg-[rgba(255,255,255,0.05)] transition-colors duration-500">ACTIVE</span>
+                        <span id="status-tag-2" class="text-xs border border-[var(--primary-sun)] px-2 py-0.5 text-[var(--primary-sun)] opacity-50 transition-colors duration-500">UNIT 001</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Lighting Status Module (Fixed Day Mode) -->
+            <!-- Lighting Status Module -->
             <div class="panel p-6 flex flex-col justify-between items-start">
                 <div>
                     <h2 class="text-sm tech-font opacity-70 mb-2">LIGHTING STATUS</h2>
-                    <div class="text-xs text-[var(--primary-sun)] opacity-60 mb-4">Safety protocols engaged.</div>
+                    <div id="lighting-msg" class="text-xs text-[var(--primary-sun)] opacity-60 mb-4">Safety protocols engaged.</div>
                 </div>
                 
                 <div class="flex items-center gap-4 w-full mt-auto">
-                    <div class="w-4 h-4 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>
-                    <span class="tech-font font-bold text-xl text-[var(--primary-sun)]">DAY_MODE</span>
+                    <div id="mode-indicator" class="w-4 h-4 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>
+                    <span id="mode-text" class="tech-font font-bold text-xl text-[var(--primary-sun)] transition-colors duration-500">DAY_MODE</span>
                 </div>
             </div>
         </section>
@@ -259,9 +361,9 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <!-- Left Column: Welcome & Status -->
                     <div>
-                        <div class="border-l-4 border-[var(--primary-sun)] pl-6 mb-8">
-                            <h3 class="text-3xl font-bold header-font text-[var(--primary-sun)] mb-2">GUEST WELCOME SEQUENCE</h3>
-                            <p class="tech-font text-lg opacity-80 leading-relaxed">
+                        <div class="border-l-4 border-[var(--primary-sun)] pl-6 mb-8 transition-colors duration-500">
+                            <h3 id="welcome-header" class="text-3xl font-bold header-font text-[var(--primary-sun)] mb-2 transition-colors duration-500">GUEST WELCOME SEQUENCE</h3>
+                            <p id="welcome-body" class="tech-font text-lg opacity-80 leading-relaxed">
                                 Initializing friendly greeting protocol...<br>
                                 "HELLO NEW FRIEND! We are going to have SO MUCH FUN together!"<br>
                                 <span class="text-xs opacity-50 mt-2 block">> Analysis: Enthusiasm at 120%</span>
@@ -269,30 +371,30 @@
                         </div>
 
                         <div class="grid grid-cols-1 gap-6 mt-8">
-                            <div class="border border-[var(--primary-sun)] p-4 bg-[rgba(255,179,0,0.05)]">
+                            <div class="border border-[var(--primary-sun)] p-4 bg-[rgba(255,255,255,0.05)] transition-colors duration-500">
                                 <div class="flex justify-between items-center mb-2">
-                                    <h4 class="font-bold tech-font">INVENTORY: CANDY</h4>
+                                    <h4 id="inv-candy-title" class="font-bold tech-font">INVENTORY: CANDY</h4>
                                     <span class="text-xs animate-pulse">● STOCK OK</span>
                                 </div>
                                 <div class="w-full bg-gray-800 h-2 mt-2">
-                                    <div class="bg-[var(--primary-sun)] h-full" style="width: 85%"></div>
+                                    <div class="bg-[var(--primary-sun)] h-full transition-colors duration-500" style="width: 85%"></div>
                                 </div>
                             </div>
-                            <div class="border border-[var(--primary-sun)] p-4 bg-[rgba(255,179,0,0.05)]">
+                            <div class="border border-[var(--primary-sun)] p-4 bg-[rgba(255,255,255,0.05)] transition-colors duration-500">
                                 <div class="flex justify-between items-center mb-2">
-                                    <h4 class="font-bold tech-font">CLEANLINESS</h4>
+                                    <h4 id="inv-clean-title" class="font-bold tech-font">CLEANLINESS</h4>
                                     <span class="text-xs animate-pulse">● SPOTLESS</span>
                                 </div>
                                 <div class="w-full bg-gray-800 h-2 mt-2">
-                                    <div class="bg-[var(--primary-sun)] h-full" style="width: 98%"></div>
+                                    <div class="bg-[var(--primary-sun)] h-full transition-colors duration-500" style="width: 98%"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Right Column: To-Do List -->
-                    <div class="border border-[var(--primary-sun)] p-6 bg-black/40">
-                        <div class="flex justify-between items-center mb-4 border-b border-[var(--primary-sun)] pb-2">
+                    <div class="border border-[var(--primary-sun)] p-6 bg-black/40 transition-colors duration-500">
+                        <div class="flex justify-between items-center mb-4 border-b border-[var(--primary-sun)] pb-2 transition-colors duration-500">
                             <h3 class="text-xl font-bold header-font">DAILY PROTOCOLS</h3>
                             <span class="text-xs tech-font opacity-60">STATUS: <span id="protocol-status">PENDING</span></span>
                         </div>
@@ -353,8 +455,8 @@
 
             <!-- CAMERA TAB -->
             <div id="camera" class="tab-content">
-                <div class="flex justify-between items-center mb-4 border-b border-[var(--primary-sun)] pb-2">
-                    <h3 class="text-2xl font-bold header-font text-[var(--primary-sun)]">SECURITY FEED</h3>
+                <div class="flex justify-between items-center mb-4 border-b border-[var(--primary-sun)] pb-2 transition-colors duration-500">
+                    <h3 class="text-2xl font-bold header-font text-[var(--primary-sun)] transition-colors duration-500">SECURITY FEED</h3>
                     <span class="tech-font text-red-500 animate-pulse font-bold">● REC [LIVE]</span>
                 </div>
                 
@@ -366,19 +468,19 @@
                     </div>
                     
                     <!-- Camera HUD Overlay -->
-                    <div class="absolute top-4 left-4 text-[var(--primary-sun)] tech-font text-sm drop-shadow-md z-10">
+                    <div class="absolute top-4 left-4 text-[var(--primary-sun)] tech-font text-sm drop-shadow-md z-10 transition-colors duration-500">
                         CAM 04: DAYCARE_FLOOR<br>
                         <span id="cam-timestamp">00:00:00</span>
                     </div>
-                    <div class="absolute bottom-4 right-4 text-[var(--primary-sun)] tech-font text-xs opacity-70 z-10">
-                        Signal Quality: 98%
+                    <div class="absolute bottom-4 right-4 text-[var(--primary-sun)] tech-font text-xs opacity-70 z-10 transition-colors duration-500">
+                        Signal Quality: <span id="signal-quality">98%</span>
                     </div>
                     
                     <!-- Crosshair -->
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-30">
-                        <div class="w-8 h-8 border border-[var(--primary-sun)]"></div>
-                        <div class="w-[1px] h-full bg-[var(--primary-sun)] absolute"></div>
-                        <div class="w-full h-[1px] bg-[var(--primary-sun)] absolute"></div>
+                        <div class="w-8 h-8 border border-[var(--primary-sun)] transition-colors duration-500"></div>
+                        <div class="w-[1px] h-full bg-[var(--primary-sun)] absolute transition-colors duration-500"></div>
+                        <div class="w-full h-[1px] bg-[var(--primary-sun)] absolute transition-colors duration-500"></div>
                     </div>
                 </div>
                 
@@ -391,7 +493,7 @@
 
             <!-- SETTINGS TAB -->
             <div id="settings" class="tab-content">
-                <h3 class="text-2xl font-bold header-font mb-6 border-b border-[var(--primary-sun)] pb-2 text-[var(--primary-sun)]">SYSTEM CONFIGURATION</h3>
+                <h3 class="text-2xl font-bold header-font mb-6 border-b border-[var(--primary-sun)] pb-2 text-[var(--primary-sun)] transition-colors duration-500">SYSTEM CONFIGURATION</h3>
 
                 <div class="space-y-8 max-w-2xl">
                     <!-- Audio Settings -->
@@ -414,14 +516,14 @@
 
                     <!-- Toggles -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                        <div class="flex items-center justify-between border border-[var(--primary-sun)] p-4 bg-[rgba(255,179,0,0.05)]">
+                        <div class="flex items-center justify-between border border-[var(--primary-sun)] p-4 bg-[rgba(255,255,255,0.05)] transition-colors duration-500">
                             <span class="tech-font font-bold">KID FRIENDLY MODE</span>
-                            <div class="w-4 h-4 bg-[var(--primary-sun)] shadow-[0_0_8px_var(--primary-sun)]"></div>
+                            <div class="w-4 h-4 bg-[var(--primary-sun)] shadow-[0_0_8px_var(--primary-sun)] transition-colors duration-500"></div>
                         </div>
                         
-                        <div class="flex items-center justify-between border border-[var(--primary-sun)] p-4 bg-[rgba(255,179,0,0.05)] opacity-50">
+                        <div class="flex items-center justify-between border border-[var(--primary-sun)] p-4 bg-[rgba(255,255,255,0.05)] opacity-50 transition-colors duration-500">
                             <span class="tech-font font-bold">NIGHT PROTOCOL</span>
-                            <div class="w-4 h-4 border border-[var(--primary-sun)]"></div>
+                            <div class="w-4 h-4 border border-[var(--primary-sun)] transition-colors duration-500"></div>
                         </div>
                     </div>
                     
@@ -435,14 +537,14 @@
             <!-- SYSTEM TAB (About) -->
             <div id="system" class="tab-content">
                 <div class="flex flex-col md:flex-row gap-8 items-center">
-                    <div class="w-48 h-48 border-4 border-[var(--primary-sun)] rounded-full flex items-center justify-center bg-black/40 relative overflow-hidden">
+                    <div class="w-48 h-48 border-4 border-[var(--primary-sun)] rounded-full flex items-center justify-center bg-black/40 relative overflow-hidden transition-colors duration-500">
                         <!-- Radar Scan Effect -->
-                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--primary-sun)] to-transparent opacity-20 animate-[spin_2s_linear_infinite]"></div>
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--primary-sun)] to-transparent opacity-20 animate-[spin_2s_linear_infinite] transition-colors duration-500"></div>
                         <span class="text-6xl relative z-10" id="sys-avatar">☀️</span>
                     </div>
                     
                     <div class="flex-grow w-full">
-                        <h3 class="text-2xl font-bold header-font text-[var(--primary-sun)] mb-4">UNIT DIAGNOSTICS</h3>
+                        <h3 class="text-2xl font-bold header-font text-[var(--primary-sun)] mb-4 transition-colors duration-500">UNIT DIAGNOSTICS</h3>
                         <div class="space-y-2 text-sm tech-font">
                             <div class="flex justify-between border-b border-gray-800 pb-1">
                                 <span class="opacity-60">MODEL:</span>
@@ -454,14 +556,14 @@
                             </div>
                             <div class="flex justify-between border-b border-gray-800 pb-1">
                                 <span class="opacity-60">PERSONALITY CORE:</span>
-                                <span>SUNNY (STABLE)</span>
+                                <span id="personality-core">SUNNY (STABLE)</span>
                             </div>
                             <div class="flex justify-between border-b border-gray-800 pb-1">
                                 <span class="opacity-60">SECURITY CLEARANCE:</span>
                                 <span>LEVEL 5 (Restricted)</span>
                             </div>
                         </div>
-                        <div class="mt-4 p-2 bg-gray-900 text-xs font-mono text-gray-400">
+                        <div class="mt-4 p-2 bg-gray-900 text-xs font-mono text-gray-400" id="sys-note">
                             > SYSTEM NOTE: Night Mode functionality deleted by user request.<br>
                             > Keep the lights on.
                         </div>
@@ -479,13 +581,136 @@
 
     <!-- LOGIC -->
     <script>
-        // --- CLOCK, BATTERY & CAM TIMESTAMP ---
+        // --- GLOBAL STATE ---
+        // Moved to top and switched to 'var' to prevent Temporal Dead Zone (ReferenceError) issues
+        var isRuinActive = false;
+        var particles = [];
+
+        // --- CORE FUNCTIONS ---
+
+        function updateRuinState(forceOn) {
+            // Check if DOM is ready
+            const opName = document.getElementById('operator-name');
+            if (!opName) return; // Safety exit
+
+            const body = document.body;
+            
+            // If state hasn't changed, do nothing
+            if (forceOn === isRuinActive) return;
+            isRuinActive = forceOn;
+
+            // DOM Elements to glitch
+            const avatar = document.getElementById('avatar-icon');
+            const sysAvatar = document.getElementById('sys-avatar');
+            const modeText = document.getElementById('mode-text');
+            const modeInd = document.getElementById('mode-indicator');
+            const welcomeHead = document.getElementById('welcome-header');
+            const welcomeBody = document.getElementById('welcome-body');
+            const core = document.getElementById('personality-core');
+            const sysNote = document.getElementById('sys-note');
+            const connStatus = document.getElementById('connection-status');
+            const lightingMsg = document.getElementById('lighting-msg');
+
+            // Inventory Titles
+            const invCandy = document.getElementById('inv-candy-title');
+            const invClean = document.getElementById('inv-clean-title');
+
+            if (isRuinActive) {
+                // ACTIVATE RUIN
+                body.classList.add('ruin-mode');
+                
+                if(opName) { opName.innerText = "E.N.T.I.T.Y"; opName.classList.add('ruin-glitch'); }
+                if(avatar) avatar.innerText = "⚠️";
+                if(sysAvatar) sysAvatar.innerText = "🐇"; 
+                
+                if(modeText) modeText.innerText = "CORRUPTION_DETECTED";
+                if(modeInd) {
+                    modeInd.classList.replace('bg-green-500', 'bg-purple-600');
+                    modeInd.style.boxShadow = "0 0 10px #9D00FF";
+                }
+                
+                if(welcomeHead) welcomeHead.innerText = "FATAL ERROR";
+                if(welcomeBody) welcomeBody.innerHTML = `
+                    <span style="color:cyan">SYSTEM COMPROMISED BY EXTERNAL ENTITY.</span><br>
+                    "Where are you going?"<br>
+                    <span class="text-xs opacity-50 mt-2 block">> Analysis: TARGET LOCATED</span>
+                `;
+                
+                if(core) { core.innerText = "M.X.E.S. (ACTIVE)"; core.style.color = "#00FFFF"; }
+                
+                if(sysNote) {
+                    sysNote.innerHTML = "> ALERT: UNKNOWN SIGNAL INTERFERENCE.<br>> SECURITY NODES ACTIVATED.";
+                    sysNote.style.color = "#00FFFF";
+                    sysNote.style.borderColor = "#9D00FF";
+                }
+                
+                if(connStatus) {
+                    connStatus.innerText = "CONNECTION LOST // RETRYING...";
+                    connStatus.classList.add('animate-pulse');
+                }
+                
+                if(lightingMsg) lightingMsg.innerText = "Power diverted to security nodes.";
+                
+                if(invCandy) invCandy.innerText = "DATA FRAGMENTS";
+                if(invClean) invClean.innerText = "VIRUS INTEGRITY";
+
+            } else {
+                // DEACTIVATE RUIN
+                body.classList.remove('ruin-mode');
+                
+                if(opName) { opName.innerText = "SUNNYDROP"; opName.classList.remove('ruin-glitch'); }
+                if(avatar) avatar.innerText = "☀️";
+                if(sysAvatar) sysAvatar.innerText = "☀️";
+                
+                if(modeText) modeText.innerText = "DAY_MODE";
+                if(modeInd) {
+                    modeInd.classList.replace('bg-purple-600', 'bg-green-500');
+                    modeInd.style.boxShadow = "0 0 10px #22c55e";
+                }
+                
+                if(welcomeHead) welcomeHead.innerText = "GUEST WELCOME SEQUENCE";
+                if(welcomeBody) welcomeBody.innerHTML = `
+                    Initializing friendly greeting protocol...<br>
+                    "HELLO NEW FRIEND! We are going to have SO MUCH FUN together!"<br>
+                    <span class="text-xs opacity-50 mt-2 block">> Analysis: Enthusiasm at 120%</span>
+                `;
+                
+                if(core) { core.innerText = "SUNNY (STABLE)"; core.style.color = ""; }
+                
+                if(sysNote) {
+                    sysNote.innerHTML = "> SYSTEM NOTE: Night Mode functionality deleted by user request.<br>> Keep the lights on.";
+                    sysNote.style.color = "";
+                    sysNote.style.borderColor = "";
+                }
+                
+                if(connStatus) {
+                    connStatus.innerText = "SECURE CONNECTION EST.";
+                    connStatus.classList.remove('animate-pulse');
+                }
+                
+                if(lightingMsg) lightingMsg.innerText = "Safety protocols engaged.";
+                
+                if(invCandy) invCandy.innerText = "INVENTORY: CANDY";
+                if(invClean) invClean.innerText = "CLEANLINESS";
+            }
+        }
+
         function updateSystem() {
             const now = new Date();
+            const hour = now.getHours();
             const timeString = now.toLocaleTimeString('en-US', { hour12: false });
             
+            // Check for Ruin Time (Midnight to 1AM) or Force Toggle
+            const isRuinTime = (hour === 0);
+            
+            const ruinToggle = document.getElementById('ruin-toggle');
+            const forceRuin = ruinToggle ? ruinToggle.checked : false;
+            
+            updateRuinState(isRuinTime || forceRuin);
+
             // Update Main Clock
-            document.getElementById('clock').innerText = timeString;
+            const clockEl = document.getElementById('clock');
+            if(clockEl) clockEl.innerText = timeString;
             
             // Update Camera Timestamp
             const camTimestamp = document.getElementById('cam-timestamp');
@@ -493,132 +718,183 @@
                 camTimestamp.innerText = now.toISOString().split('T')[0] + ' ' + timeString;
             }
             
-            // Random tiny fluctuation in battery for "realism"
-            if(Math.random() > 0.9) {
-                document.getElementById('battery-level').style.opacity = (Math.random() > 0.5) ? '1' : '0.5';
-            } else {
-                document.getElementById('battery-level').style.opacity = '1';
+            // Battery Logic
+            const batteryLevel = document.getElementById('battery-level');
+            const batteryFill = document.getElementById('battery-fill');
+            
+            if(batteryLevel && batteryFill) {
+                if(Math.random() > 0.9) {
+                    batteryLevel.style.opacity = (Math.random() > 0.5) ? '1' : '0.5';
+                    if(isRuinActive) {
+                        batteryFill.style.width = Math.floor(Math.random() * 100) + '%';
+                    }
+                } else {
+                    batteryLevel.style.opacity = '1';
+                    if(isRuinActive && Math.random() > 0.95) {
+                         batteryFill.style.backgroundColor = '#9D00FF';
+                    } else {
+                         batteryFill.style.backgroundColor = 'var(--primary-sun)';
+                         if(!isRuinActive) batteryFill.style.width = '100%';
+                    }
+                }
+            }
+
+            // Signal Quality Glitch in Ruin Mode
+            if(isRuinActive) {
+                const signal = document.getElementById('signal-quality');
+                if(signal) {
+                    signal.innerText = Math.floor(Math.random() * 50) + '%';
+                    signal.style.color = "red";
+                }
             }
         }
-        setInterval(updateSystem, 1000);
-        updateSystem();
 
         // --- NAVIGATION ---
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
+            const target = document.getElementById(tabId);
+            if(target) target.classList.add('active');
+            
             document.querySelectorAll('.sys-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('btn-' + tabId).classList.add('active');
-        }
-        
-        // --- CONFETTI & CHECKLIST LOGIC ---
-        const canvas = document.getElementById('confetti-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Handle Resize
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        let particles = [];
-        const sunEmoji = "☀️";
-        const colors = ['#FFB300', '#FFF9C4', '#E65100', '#FFFFFF'];
-
-        function createParticle() {
-            return {
-                x: Math.random() * canvas.width,
-                y: -30,
-                size: Math.random() * 10 + 5,
-                speedY: Math.random() * 3 + 2,
-                speedX: Math.random() * 2 - 1,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                rotation: Math.random() * 360,
-                rotationSpeed: Math.random() * 10 - 5,
-                type: Math.random() > 0.8 ? 'sun' : 'confetti' // 20% Chance of Sun
-            };
+            const btn = document.getElementById('btn-' + tabId);
+            if(btn) btn.classList.add('active');
         }
 
-        function updateParticles() {
-            for (let i = 0; i < particles.length; i++) {
-                let p = particles[i];
-                p.y += p.speedY;
-                p.x += p.speedX;
-                p.rotation += p.rotationSpeed;
+        // --- CONFETTI & CANVAS ---
+        function initCanvas() {
+            const canvas = document.getElementById('confetti-canvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
 
-                if (p.y > canvas.height) {
-                    particles.splice(i, 1);
-                    i--;
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function createParticle() {
+                const isRuin = document.body.classList.contains('ruin-mode');
+                const sunEmoji = isRuin ? "⚠️" : "☀️";
+                const normalColors = ['#FFB300', '#FFF9C4', '#E65100', '#FFFFFF'];
+                const ruinColors = ['#00FFFF', '#9D00FF', '#000000', '#FFFFFF'];
+                
+                const palette = isRuin ? ruinColors : normalColors;
+
+                return {
+                    x: Math.random() * canvas.width,
+                    y: -30,
+                    size: Math.random() * 10 + 5,
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    color: palette[Math.floor(Math.random() * palette.length)],
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5,
+                    type: Math.random() > 0.8 ? 'sun' : 'confetti' 
+                };
+            }
+
+            function updateParticles() {
+                for (let i = 0; i < particles.length; i++) {
+                    let p = particles[i];
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.rotation += p.rotationSpeed;
+
+                    if (p.y > canvas.height) {
+                        particles.splice(i, 1);
+                        i--;
+                    }
                 }
+            }
+
+            function drawParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const isRuin = document.body.classList.contains('ruin-mode');
+                const sunEmoji = isRuin ? "⚠️" : "☀️";
+
+                for (let p of particles) {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rotation * Math.PI) / 180);
+                    
+                    if (p.type === 'sun') {
+                        ctx.font = `${p.size * 2}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(sunEmoji, 0, 0);
+                    } else {
+                        ctx.fillStyle = p.color;
+                        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    }
+                    
+                    ctx.restore();
+                }
+            }
+
+            // Expose startConfetti globally so checklist can call it
+            window.startConfetti = function() {
+                // Update Status Text
+                const statusText = document.getElementById('protocol-status');
+                if(statusText) {
+                    statusText.innerText = "COMPLETE!";
+                    statusText.style.color = "#22c55e"; 
+                }
+
+                let duration = 5000; 
+                let end = Date.now() + duration;
+
+                (function frame() {
+                    if (Date.now() < end) {
+                        for(let i=0; i<3; i++) particles.push(createParticle());
+                    }
+                    updateParticles();
+                    drawParticles();
+
+                    if (Date.now() < end || particles.length > 0) {
+                        requestAnimationFrame(frame);
+                    } else {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                }());
             }
         }
 
-        function drawParticles() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let p of particles) {
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                ctx.rotate((p.rotation * Math.PI) / 180);
-                
-                if (p.type === 'sun') {
-                    ctx.font = `${p.size * 2}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(sunEmoji, 0, 0);
-                } else {
-                    ctx.fillStyle = p.color;
-                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-                }
-                
-                ctx.restore();
+        // --- INITIALIZATION ---
+        // Run after DOM is ready
+        (function init() {
+            // Init Canvas Logic
+            initCanvas();
+            
+            // Init Toggle Listener
+            const ruinToggle = document.getElementById('ruin-toggle');
+            if (ruinToggle) {
+                ruinToggle.addEventListener('change', (e) => {
+                    updateSystem(); 
+                });
             }
-        }
 
-        function startConfetti() {
-            // Update Status Text
-            const statusText = document.getElementById('protocol-status');
-            statusText.innerText = "COMPLETE!";
-            statusText.style.color = "#22c55e"; // Green
-
-            let duration = 5000; // 5 seconds
-            let end = Date.now() + duration;
-
-            (function frame() {
-                // Burst new particles
-                if (Date.now() < end) {
-                    // Spawn rate
-                    for(let i=0; i<3; i++) particles.push(createParticle());
-                }
-                
-                updateParticles();
-                drawParticles();
-
-                if (Date.now() < end || particles.length > 0) {
-                    requestAnimationFrame(frame);
-                } else {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                }
-            }());
-        }
-
-        // Checklist Monitoring
-        const checkboxes = document.querySelectorAll('#todo-list input[type="checkbox"]');
-        
-        checkboxes.forEach(box => {
-            box.addEventListener('change', () => {
-                const allChecked = Array.from(checkboxes).every(b => b.checked);
-                if (allChecked) {
-                    startConfetti();
-                } else {
-                    // Reset status if unchecked
-                    const statusText = document.getElementById('protocol-status');
-                    statusText.innerText = "PENDING";
-                    statusText.style.color = "";
-                }
+            // Init Checklist Logic
+            const checkboxes = document.querySelectorAll('#todo-list input[type="checkbox"]');
+            checkboxes.forEach(box => {
+                box.addEventListener('change', () => {
+                    const allChecked = Array.from(checkboxes).every(b => b.checked);
+                    if (allChecked) {
+                        if(window.startConfetti) window.startConfetti();
+                    } else {
+                        const statusText = document.getElementById('protocol-status');
+                        if(statusText) {
+                            statusText.innerText = "PENDING";
+                            statusText.style.color = "";
+                        }
+                    }
+                });
             });
-        });
+
+            // Start System Loop
+            setInterval(updateSystem, 1000);
+            updateSystem();
+        })();
 
     </script>
 </body>
